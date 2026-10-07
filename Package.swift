@@ -30,18 +30,18 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "MaestroKitParamount",
-            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/1.12.1/MaestroKitParamount.xcframework.zip",
-            checksum: "f4bfc5b59ccae5668b5351a36709d7ef01a442487e2085521e1110c3412ab74c"
+            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/1.13.0/MaestroKitParamount.xcframework.zip",
+            checksum: "cee297e73cfb7b703761123c3ba779122ee10278231ad6d2b6fe37e2fba26cfe"
         ),
         .binaryTarget(
             name: "MaestroCore",
-            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/1.12.1/MaestroCore.xcframework.zip",
-            checksum: "b5fc1aa68d53f06b6f68597bcbf218ef88beeee28e69bebb9caa4145a1f2cda9"
+            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/1.13.0/MaestroCore.xcframework.zip",
+            checksum: "31cedb21b25380824bb2451e12aa6f02bc18d2d61076d1e79ef662650f728f8c"
         ),
         .binaryTarget(
             name: "paramountKit",
-            url: "https://github.com/lessthan3/MaestroKit.android/releases/download/paramountKit-4.0.36.374/paramountKit-4.0.36.374.zip",
-            checksum: "7bb8aabc4a191364c0ec0ed1bb23e32a01e5fa286da949b9e4345d582ff2a0d5"
+            url: "https://github.com/lessthan3/MaestroKit.android/releases/download/paramountKit-4.0.39.401/paramountKit-4.0.39.401.zip",
+            checksum: "9b0cb5f41d64a3e5b3530feb318c6d5e60259187fd156cf057b818fed8437085"
         ),
         // Internal link shim (source target): pulls the dynamic Sentry framework
         // into the product so MaestroCore's telemetry resolves at runtime. Its
