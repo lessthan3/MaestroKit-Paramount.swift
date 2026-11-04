@@ -1,13 +1,4 @@
-// Internal link shim — do NOT import this from consumer code.
-//
-// MaestroKitParamount ships as a prebuilt binary xcframework whose source
-// imports RiveRuntime. A binary target cannot declare its own package
-// dependencies, so the consumer's package graph would have no RiveRuntime to
-// resolve or link against — `swift build` fails with "unable to resolve module
-// dependency: 'RiveRuntime'".
-//
-// This tiny source target carries the RiveRuntime dependency (see the package
-// manifest). Because it is a member of the shipped library product, RiveRuntime
-// resolves and links into the consuming app automatically — no changes to the
-// client's own integration or code.
+// Internal link shim — do not import from consumer code.
+// The binary xcframework imports RiveRuntime but can't declare package dependencies;
+// this target carries that dependency so it resolves and links into the consuming app.
 @_exported import RiveRuntime
