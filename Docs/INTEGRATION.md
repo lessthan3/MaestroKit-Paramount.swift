@@ -106,12 +106,29 @@ await MaestroManager.shared.configure(
 - The SDK calls the provider when a chat action needs a token (joining, sending, or retrying a message) and again after the server rejects a token (401). It never calls on a timer, and it reuses the token it already holds in between.
 - Set the chat header and guidelines link with `chatConfiguration: ChatConfiguration(title:guidelinesURL:)` on the same `configure` call. Both default to empty.
 - Returning `nil` (signed out) keeps chat read-only: the viewer can't join or send.
+- When the viewer signs in to another account or signs out, call `await MaestroManager.shared.resetChatSession()`. Open chats return to not joined, drop unsent messages, and ask your provider for a token on the next action.
 - Don't log the token or include it in crash reports. The SDK doesn't log it.
 - Each `configure` call replaces the chat provider and configuration. Omitting `chatTokenProvider` leaves chat read-only. The `configure(siteID:showHelloWorld:maestroWorkingEnvironment:)` overload keeps the current provider and configuration.
 
 ### Live chat panel
 
-Create one `ParamountChatController` per Chat tab, point it at the event, and show `ParamountChatPanel` with it:
+Show a Chat tab when the event's `RenderedChannels` lists `.chat`. The tab order comes in `tabOrder`, and a new `RenderedChannels` arrives whenever it changes:
+
+```swift
+func onPanelEvent(event: PanelEvent) async {
+    switch event {
+    case let rendered as RenderedChannels:
+        host?.tabs = rendered.tabOrder.compactMap { MaestroPanelType(panelTypeValue: $0) }
+        // e.g. [.paramountStats, .paramountKeyMoments, .chat]
+    default:
+        break
+    }
+}
+```
+
+Under your Chat tab, show `MaestroPanel(singlePanel: .chat)` (iOS only). It shows chat for the event you started watching, at the live edge.
+
+To get chat events or drive the spoiler gate, show `ParamountChatPanel` yourself instead. Create one `ParamountChatController` per Chat tab, point it at the event, and show `ParamountChatPanel` with it:
 
 ```swift
 @State private var chat = ParamountChatController()
@@ -130,6 +147,7 @@ Group {
 - `onEvent` receives `ParamountChatEvent`: `.joined(username:)`, `.error(message:)`, and `.guidelinesTapped(url:)`.
 - `setPlaybackPosition(_:)` takes `.live` or `.latent`. The spoiler gate isn't built yet, so the value is stored only.
 - The panel collects chat while it is on screen and the app is active.
+- When chat is switched off on the server, the panel shows "Chat is unavailable." in place of the feed.
 
 Note: the controller currently exposes the presenter, and the panel takes it directly. Use `presenter` as shown until the panel takes the controller.
 
@@ -298,7 +316,7 @@ struct PlayerScreen: View {
 | Parameter | Default | Purpose |
 |---|---|---|
 | `width` | `nil` | Maximum width in points. `nil` lets the panel fill its container. |
-| `singlePanel` | `nil` | Show one tab only, with no tab bar: `.paramountStats` or `.paramountKeyMoments`. `nil` shows every tab. |
+| `singlePanel` | `nil` | Show one tab only, with no tab bar: `.paramountStats`, `.paramountKeyMoments`, or `.chat` (iOS only). `nil` shows Stats and Key Moments. |
 | `maestroManager` | `.shared` | Override only for advanced testing. |
 
 The panel has two tabs:
@@ -307,6 +325,8 @@ The panel has two tabs:
 |---|---|---|
 | `.paramountStats` | Stats | Live and pregame stats for the event (UFC and NFL layouts). |
 | `.paramountKeyMoments` | Key Moments | The Key Moments list your app supplies (§8). |
+
+`MaestroPanelType.chat` is the Chat tab. `MaestroPanel` shows it only as `singlePanel: .chat`, never in its own tab bar (§3).
 
 ### Panel show/hide contract
 
@@ -535,7 +555,7 @@ The SDK stamps two kinds of context on every event for you:
 | `MaestroManager` | The actor singleton you talk to. Access via `MaestroManager.shared`. |
 | `MaestroPanel` | SwiftUI view rendering the Maestro panel. |
 | `MaestroOverlay` | SwiftUI view that renders a `MaestroOverlayEvent`. |
-| `MaestroPanelType` | `.paramountStats` / `.paramountKeyMoments`. |
+| `MaestroPanelType` | `.paramountStats` / `.paramountKeyMoments` / `.chat`. |
 | `MaestroOverlayEvent` | Overlay payload passed to `shouldShowOverlay`. Public surface: `id`. |
 | `MaestroEventDelegate` | Protocol your app implements (Paramount extension — adds `onKeyMomentSelected`, `onKeyMomentsSortOrderChanged`, `onKeyMomentsRefreshNeeded`). |
 | `MaestroEventInterface` | Protocol the SDK returns from `userDidStartWatchingEvents`. Your one-way push channel. |
