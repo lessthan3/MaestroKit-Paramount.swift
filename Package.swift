@@ -30,13 +30,13 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "MaestroKitParamount",
-            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/chat-preview/MaestroKitParamount.xcframework.zip",
-            checksum: "edfe3d7e235f1ad89ad150142470abfe6060e065fc57c0fe072ba1a16e30c8f8"
+            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/chat-preview-587/MaestroKitParamount.xcframework.zip",
+            checksum: "8ddeaa9d060daa85a42149ae6081f37ec3ed77cc90f9455b0a2cbdc2e62a962a"
         ),
         .binaryTarget(
             name: "MaestroCore",
-            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/chat-preview/MaestroCore.xcframework.zip",
-            checksum: "afb6bef9d6228b91621aa449d6d0aa63c6b4c61d244f8c0a83edc1ed5cf2add6"
+            url: "https://github.com/lessthan3/MaestroKit-Paramount.swift/releases/download/chat-preview-587/MaestroCore.xcframework.zip",
+            checksum: "267eb7b3e35d0ce3dd4c106ea7dd20782f5200b167083bdf53dfcd5d063835f5"
         ),
         .binaryTarget(
             name: "paramountKit",
