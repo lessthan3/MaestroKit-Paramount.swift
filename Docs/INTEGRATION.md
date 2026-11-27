@@ -109,7 +109,6 @@ await MaestroManager.shared.configure(
 - When the viewer signs in to another account or signs out, call `await MaestroManager.shared.resetChatSession()`. Open chats return to not joined, drop unsent messages, and ask your provider for a token on the next action.
 - Don't log the token or include it in crash reports. The SDK doesn't log it.
 - Each `configure` call replaces the chat provider and configuration. Omitting `chatTokenProvider` leaves chat read-only. The `configure(siteID:showHelloWorld:maestroWorkingEnvironment:)` overload keeps the current provider and configuration.
-- `chatLoginService` names the auth service the chat login exchanges the token under. It defaults to `"paramount"`, which production uses. Only QA hosts that sign in with Firebase stand-in tokens pass `"paramount-mock"`. Each `configure` call sets it, and the overload without `chatTokenProvider` keeps the current value.
 
 ### Live chat panel
 
@@ -129,26 +128,31 @@ func onPanelEvent(event: PanelEvent) async {
 
 Under your Chat tab, show `MaestroPanel(singlePanel: .chat)` (iOS only). It shows chat for the event you started watching, at the live edge.
 
-To get chat events or drive the spoiler gate, show `ParamountChatPanel` yourself instead. Create one `ParamountChatController` per Chat tab, point it at the event, and show `ParamountChatPanel` with it:
+Tell the chat where the viewer is through the event interface. The type comes from `MaestroCore`:
 
 ```swift
-@State private var chat = ParamountChatController()
+// When the player moves away from the live edge:
+eventInterface.setChatPlaybackPosition(.latent)
 
-Group {
-    if let presenter = chat.presenter {
-        ParamountChatPanel(presenter: presenter)
-    }
-}
-.task(id: eventID) {
-    await chat.setChatContext(eventId: eventID, chatEnabled: true)
-}
+// When the viewer is back at the live edge:
+eventInterface.setChatPlaybackPosition(.live)
 ```
 
-- `setChatContext(eventId:chatEnabled:)` switches the chat to another event without recreating the SDK. Pass `chatEnabled: false` to hide chat for an event.
-- `onEvent` receives `ParamountChatEvent`: `.joined(username:)`, `.error(message:)`, and `.guidelinesTapped(url:)`.
-- `setPlaybackPosition(_:)` takes `.live` or `.latent`. The spoiler gate isn't built yet, so the value is stored only.
+- `setChatPlaybackPosition(_:)` takes `.live` or `.latent`. While `.latent`, chat is hidden behind a spoiler gate until you set `.live`.
+- Tapping the gate's JUMP TO LIVE button sends `ChatJumpToLive` through `onPanelEvent(event:)`. The SDK doesn't move the player, so seek the player to live, then set `.live`.
+
+#### Live edge
+
+The chat follows the player's position relative to the live edge:
+
+- **Live (`.live`):** messages stream in, and the feed follows new messages while the viewer is at the bottom.
+- **Latent (`.latent`):** the viewer is behind live, for example after pausing or seeking back. The chat is blurred behind a gate that reads "To avoid spoilers, chat is only available live." It keeps updating underneath but is hidden from VoiceOver and doesn't take touches.
+
+Keep the position in step with the player. If it stays `.live` while the player is behind, the chat shows messages the viewer hasn't reached yet.
 - The panel collects chat while it is on screen and the app is active.
 - When chat is switched off on the server, the panel shows "Chat is unavailable." in place of the feed.
+
+To render chat without the panel, create one `ParamountChatController` per Chat tab, point it at the event with `setChatContext(eventId:chatEnabled:)`, and show `ParamountChatPanel(presenter:playback:)` with its `presenter`. Chat events arrive on `MaestroEventDelegate.onPanelEvent(event:)` as `ParamountChatPanelEvent`: `ChatJoined(username:)`, `ChatError(message:)`, `ChatGuidelinesTapped(url:)`, and `ChatJumpToLive`. Pass `chatEnabled: false` to hide chat for an event.
 
 Note: the controller currently exposes the presenter, and the panel takes it directly. Use `presenter` as shown until the panel takes the controller.
 
@@ -542,6 +546,8 @@ func trackImpression(analytics: [String: String])  // fired when surfaces appear
 
 The dictionary keys are stable. Forward them verbatim to your analytics SDK — don't transform them.
 
+Chat events are the exception to the full key set. For a chat event the dictionary carries only `e0` to `e6`, `e_m`, `e_u` and `d_or` (orientation). The action is in `e5` and `e_m.action`; there is no `e_m.event_name`, and `e_m` has no version or orientation keys. Read chat actions from `e5`, not from `e_m`.
+
 The SDK stamps two kinds of context on every event for you:
 
 - **Screen orientation** (`screenOrientation`) — reported by the panel automatically.
@@ -567,8 +573,11 @@ The SDK stamps two kinds of context on every event for you:
 | `ParamountUrls` | Optional backend override for `configure(…, urls:)`. |
 | `ChatTokenProvider` | Protocol your app implements to supply the viewer's chat token (§3). |
 | `ParamountChatPanel` | SwiftUI chat panel for a Chat tab (iOS only). |
-| `ParamountChatController` | Switches the chat between events and reports `ParamountChatEvent`s. |
-| `ParamountChatEvent` / `ParamountChatPlayback` | Events the chat reports, and the live or latent position it's given. |
+| `ParamountChatController` | Switches the chat between events. Used directly when you render `ParamountChatPanel` yourself. |
+| `ParamountChatPanelEvent` | Chat events, delivered through `onPanelEvent(event:)`: `ChatJoined`, `ChatError`, `ChatGuidelinesTapped`, `ChatJumpToLive`. Switch on them with `onEnum(of:)`. |
+| `ParamountChatPlayback` | The live or latent position the chat is given. An alias of `ChatPlaybackPosition`. |
+| `MaestroChatInterface` (MaestroCore) | Chat call on an event interface: `setChatPlaybackPosition(_:)`. Paramount's event interface adopts it. |
+| `ChatPlaybackPosition` (MaestroCore) | `.live` or `.latent`, the viewer's position relative to the live edge. |
 | `MaestroPanelOverride` / `MaestroPanelOverrideError` | Used by `setDataToPanel` (§13.10) and returned by `setRemoteConfig`. |
 | `MaestroWorkingEnvironment` | `.test` / `.qa` / `.prod`. |
 
